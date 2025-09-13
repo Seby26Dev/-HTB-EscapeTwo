@@ -1,4 +1,3 @@
-<img width="927" height="383" alt="image" src="https://github.com/user-attachments/assets/57f9f98b-f964-4998-bdf7-76a67c2573e9" /># -HTB-EscapeTwo
 
 ### Nmap 
 
